@@ -5,8 +5,11 @@ import { initAdminView } from './admin.js';
 const app = document.getElementById('app');
 const loader = document.getElementById('loader');
 
-// --- STARTUP ---
 async function init() {
+    // 1. Mobile Menu Logic (Run Immediately)
+    setupMobileMenu();
+
+    // 2. Auth Check
     const { data: { session } } = await supabase.auth.getSession();
     
     loader.style.display = 'none';
@@ -14,25 +17,46 @@ async function init() {
     if (!session) {
         renderLogin();
     } else {
-        // Logged in! Load User View by default
+        // Init View
         initUserView(session.user);
-        
-        // Add "Admin Panel" button if user is special (Example check)
         checkAdminAccess(session.user.id);
     }
 }
 
+function setupMobileMenu() {
+    const btn = document.getElementById('mobile-menu-btn');
+    // Delegate event listener to handle potential dynamic classes
+    document.addEventListener('click', (e) => {
+        const sidebar = document.querySelector('.sidebar');
+        
+        // Open/Close on Button Click
+        if (e.target.closest('#mobile-menu-btn')) {
+            sidebar.classList.toggle('open');
+        }
+
+        // Close when clicking outside (Overlay effect)
+        if (sidebar && sidebar.classList.contains('open') && 
+            !e.target.closest('.sidebar') && 
+            !e.target.closest('#mobile-menu-btn')) {
+            sidebar.classList.remove('open');
+        }
+    });
+}
+
 async function checkAdminAccess(uid) {
-    // Check if user has high rank
     const { data: user } = await supabase.from('profiles').select('ranks(weight)').eq('id', uid).single();
-    if (user?.ranks?.weight >= 90) { // Assuming 90+ is admin
+    if (user?.ranks?.weight >= 90) {
         const nav = document.querySelector('.nav');
         if(nav) {
             const adminBtn = document.createElement('button');
             adminBtn.className = 'nav-btn';
             adminBtn.style.color = '#ef4444';
-            adminBtn.innerHTML = '<i data-lucide="shield-alert"></i> Switch to Admin Panel';
-            adminBtn.onclick = () => initAdminView({ id: uid });
+            adminBtn.innerHTML = '<i data-lucide="shield-alert"></i> Admin Panel';
+            adminBtn.onclick = () => {
+                initAdminView({ id: uid });
+                // Close sidebar on mobile when switching
+                document.querySelector('.sidebar').classList.remove('open');
+            };
             nav.appendChild(adminBtn);
             lucide.createIcons();
         }
@@ -40,9 +64,12 @@ async function checkAdminAccess(uid) {
 }
 
 function renderLogin() {
+    // Hide mobile button on login screen
+    document.getElementById('mobile-menu-btn').style.display = 'none';
+
     app.innerHTML = `
-        <div style="height:100vh; display:flex; justify-content:center; align-items:center;">
-            <div class="modal-box">
+        <div style="height:100vh; display:flex; justify-content:center; align-items:center; padding:20px;">
+            <div class="modal-box" style="width:100%; max-width:400px;">
                 <h2 style="text-align:center; margin-bottom:20px;">Staff Portal</h2>
                 <form id="login-form">
                     <label>Email</label>
@@ -66,22 +93,3 @@ function renderLogin() {
 }
 
 init();
-
-// Add Mobile Menu Toggle Logic
-const mobileBtn = document.getElementById('mobile-menu-btn');
-const sidebar = document.querySelector('.sidebar');
-
-if(mobileBtn) {
-    mobileBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-    });
-
-    // Close sidebar when clicking outside on mobile
-    document.addEventListener('click', (e) => {
-        if(window.innerWidth <= 768 && 
-           !sidebar.contains(e.target) && 
-           !mobileBtn.contains(e.target)) {
-            sidebar.classList.remove('open');
-        }
-    });
-}
