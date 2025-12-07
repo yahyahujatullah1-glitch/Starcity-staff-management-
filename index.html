@@ -3,80 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StarCity Staff Portal</title>
-    
-    <!-- ✅ CRITICAL FIX: Updated path to look inside the 'css' folder -->
+    <title>Admin Command Center</title>
     <link rel="stylesheet" href="css/styles.css">
-    
-    <!-- Load Supabase Library (Must be loaded first) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Load Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-    <!-- ... existing code ... -->
+
+    <!-- LOADER -->
+    <div id="global-loader" class="loader-container">
+        <div class="spinner"></div>
+        <p style="margin-top:15px; color:#a1a1aa; font-family:sans-serif;">System Initializing...</p>
+    </div>
+
+    <!-- APP CONTAINER -->
     <div id="app" class="app-container" style="display: none;"></div>
 
-    <!-- ✅ NEW: MANAGEMENT MODAL (Hidden by default) -->
+    <!-- GENERIC MODAL -->
     <div id="modal-overlay" class="modal-overlay" style="display: none;">
         <div class="modal-box">
             <div class="modal-header">
-                <h3>Manage Staff Member</h3>
-                <button id="close-modal" class="btn-icon"><i data-lucide="x"></i></button>
+                <h3 id="modal-title">Action</h3>
+                <button class="btn-icon close-modal"><i data-lucide="x"></i></button>
             </div>
-            <div class="modal-body">
-                <input type="hidden" id="edit-user-id">
-                
-                <div class="input-group">
-                    <label>Full Name</label>
-                    <input type="text" id="edit-name">
-                </div>
-                
-                <div class="grid-2">
-                    <div class="input-group">
-                        <label>Department</label>
-                        <select id="edit-dept"></select>
-                    </div>
-                    <div class="input-group">
-                        <label>Rank</label>
-                        <select id="edit-rank"></select>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label>Status</label>
-                    <select id="edit-status">
-                        <option value="active">Active Duty</option>
-                        <option value="loa">Leave of Absence (LOA)</option>
-                        <option value="suspended">Suspended</option>
-                        <option value="retired">Retired</option>
-                    </select>
-                </div>
-
-                <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <button id="save-user-btn" class="btn-primary">Save Changes</button>
-                    <!-- Future: Add Warning Button Here -->
-                </div>
+            <div class="modal-body" id="modal-content">
+                <!-- Content injected by JS -->
             </div>
         </div>
     </div>
 
     <script type="module" src="js/app.js"></script>
-</body>
-</html>
-
-    <!-- Loading Screen (Visible while checking connection) -->
-    <div id="global-loader" class="loader-container">
-        <div class="spinner"></div>
-        <p style="color: #a1a1aa; font-family: sans-serif; margin-top: 10px;">Establishing Secure Connection...</p>
-    </div>
-
-    <!-- Main Application Container -->
-    <div id="app" class="app-container" style="display: none;"></div>
-
-    <!-- Main Logic Script -->
-    <script type="module" src="js/app.js"></script>
-
 </body>
 </html>
