@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StarCity Portal</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -10,18 +10,20 @@
 </head>
 <body>
 
-    <button id="mobile-menu-btn" class="mobile-toggle"><i data-lucide="menu"></i></button>
+    <!-- MOBILE MENU BUTTON (Top Right) -->
+    <button id="mobile-menu-btn" class="mobile-toggle">
+        <i data-lucide="menu"></i>
+    </button>
 
     <!-- LOADER -->
     <div id="loader" class="loader-container">
         <div class="spinner"></div>
-        <p>Connecting to Network...</p>
     </div>
 
-    <!-- APP CONTAINER -->
+    <!-- APP -->
     <div id="app" class="app-container"></div>
 
-    <!-- MODAL CONTAINER -->
+    <!-- MODAL -->
     <div id="modal-overlay" class="modal-overlay" style="display:none;">
         <div class="modal-box">
             <div class="modal-header">
@@ -32,7 +34,6 @@
         </div>
     </div>
 
-    <!-- MODULES -->
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
