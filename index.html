@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Command Center</title>
+    <title>Nexus Staff System</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Load Supabase from CDN -->
+    <!-- Supabase & Icons (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Load Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
-    <div id="app" class="app-container">
-        <!-- Content is injected here by JavaScript -->
+    <!-- Loading Screen (Shows initially) -->
+    <div id="global-loader" class="loader-container">
+        <div class="spinner"></div>
+        <p>Initializing Secure Connection...</p>
     </div>
 
-    <!-- Main Entry Point -->
+    <!-- Main App Container -->
+    <div id="app" class="app-container" style="display: none;"></div>
+
+    <!-- SCRIPTS -->
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
