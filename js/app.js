@@ -1,309 +1,202 @@
 import { supabase } from './config.js';
 
-// --- GLOBAL ELEMENTS ---
 const app = document.getElementById('app');
 const loader = document.getElementById('global-loader');
+let currentUser = null;
 
-// --- 1. INITIALIZATION (STARTUP) ---
+// --- INIT ---
 async function init() {
-    try {
-        console.log("App initializing...");
+    const { data: { session } } = await supabase.auth.getSession();
+    if (loader) loader.style.display = 'none';
+    app.style.display = 'block';
 
-        // Check if user is logged in
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) throw error;
-
-        // Hide the loading spinner with a smooth fade
-        if (loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => {
-                loader.style.display = 'none';
-                app.style.display = 'block';
-            }, 500);
-        }
-
-        // Route to correct page
-        if (!session) {
-            renderLogin();
-        } else {
-            handleRouting(session.user);
-        }
-    } catch (err) {
-        console.error("Init Error:", err);
-        alert("Failed to connect to system. Check console for details.");
-    }
-}
-
-// --- 2. ROUTER (NAVIGATION) ---
-function handleRouting(user) {
-    // Determine which page to show based on URL hash (e.g., #staff)
-    const hash = window.location.hash || '#dashboard';
-    
-    // Always render the layout first (Sidebar)
-    renderLayout(user);
-
-    // Load specific page content
-    if (hash === '#staff') {
-        renderStaffPage();
-    } else if (hash === '#tasks') {
-        renderTasksPage(); // Placeholder
+    if (!session) {
+        renderLogin();
     } else {
-        renderDashboardPage(user);
+        currentUser = session.user;
+        handleRouting();
     }
-
-    // Update active link in sidebar
-    updateSidebarActiveState(hash);
-
-    // Listen for future navigation changes
-    window.onhashchange = () => handleRouting(user);
 }
 
-function updateSidebarActiveState(hash) {
-    document.querySelectorAll('.nav-item').forEach(el => {
-        el.classList.remove('active');
-        if (el.getAttribute('href') === hash) el.classList.add('active');
-    });
+// --- ROUTER ---
+function handleRouting() {
+    const hash = window.location.hash || '#dashboard';
+    renderLayout(currentUser);
+    
+    if (hash === '#staff') renderStaffPage();
+    else renderDashboardPage();
 }
 
-// --- 3. VIEW: LOGIN PAGE ---
+// --- LOGIN ---
 function renderLogin() {
     app.innerHTML = `
-        <div class="login-wrapper fade-in">
+        <div class="login-wrapper">
             <div class="login-box">
-                <div class="login-header">
-                    <i data-lucide="shield" style="width:40px; height:40px; color:#3b82f6; margin-bottom:10px;"></i>
-                    <h2>StarCity Staff</h2>
-                    <p>Restricted Access</p>
-                </div>
+                <h2 style="text-align:center; margin-bottom:20px;">Staff Access</h2>
                 <form id="login-form">
-                    <div class="input-group">
-                        <label>Email Address</label>
-                        <input type="email" id="email" placeholder="admin@starcity.com" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Password</label>
-                        <input type="password" id="password" placeholder="••••••••" required>
-                    </div>
-                    <button type="submit" class="btn-primary">Secure Login</button>
-                    <p id="login-error" style="color: #f87171; font-size: 0.85rem; margin-top: 15px; text-align: center; display: none;"></p>
+                    <input type="email" id="email" placeholder="Email" required style="margin-bottom:10px; width:100%; padding:10px;">
+                    <input type="password" id="password" placeholder="Password" required style="margin-bottom:10px; width:100%; padding:10px;">
+                    <button class="btn-primary">Login</button>
                 </form>
             </div>
-        </div>
-    `;
-    lucide.createIcons();
-
-    // Handle Form Submit
+        </div>`;
+    
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = e.target.querySelector('button');
-        const errorMsg = document.getElementById('login-error');
-        
-        // Show loading state on button
-        btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" style="width:16px;"></i> Verifying...`;
-        btn.disabled = true;
-        errorMsg.style.display = 'none';
-
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (error) {
-            errorMsg.innerText = "Access Denied: " + error.message;
-            errorMsg.style.display = 'block';
-            btn.innerHTML = 'Secure Login';
-            btn.disabled = false;
-        } else {
-            // Success: Reload to trigger init() again
-            window.location.hash = '#dashboard';
-            window.location.reload(); 
-        }
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) alert(error.message);
+        else window.location.reload();
     });
 }
 
-// --- 4. VIEW: MAIN LAYOUT (SIDEBAR) ---
+// --- LAYOUT ---
 function renderLayout(user) {
-    // Only inject layout if it's not already there
-    if (!document.getElementById('sidebar-layout')) {
-        app.innerHTML = `
-            <div id="sidebar-layout" class="dashboard-layout fade-in">
-                <aside class="sidebar">
-                    <div class="brand">
-                        <i data-lucide="shield-check" style="color:#3b82f6"></i> STARCITY
-                    </div>
-                    <nav>
-                        <a href="#dashboard" class="nav-item">
-                            <i data-lucide="layout-dashboard"></i> Overview
-                        </a>
-                        <a href="#staff" class="nav-item">
-                            <i data-lucide="users"></i> Staff Roster
-                        </a>
-                        <a href="#tasks" class="nav-item">
-                            <i data-lucide="clipboard-list"></i> Assignments
-                        </a>
-                    </nav>
-                    <div style="margin-top: auto;">
-                        <div style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 10px;">
-                            <div style="font-size: 0.75rem; color: gray; text-transform:uppercase; letter-spacing:1px;">User</div>
-                            <div style="font-weight: 600; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis;">${user.email}</div>
-                        </div>
-                        <button id="logout-btn" class="nav-item" style="width: 100%; border: none; background: transparent; cursor: pointer; color: #f87171;">
-                            <i data-lucide="log-out"></i> Sign Out
-                        </button>
-                    </div>
-                </aside>
-                <main class="main-content" id="main-view"></main>
-            </div>
-        `;
-        
-        // Handle Logout
-        document.getElementById('logout-btn').addEventListener('click', async () => {
-            await supabase.auth.signOut();
-            window.location.reload();
-        });
-    }
+    if (document.getElementById('sidebar')) return;
+    app.innerHTML = `
+        <div class="dashboard-layout">
+            <aside id="sidebar" class="sidebar">
+                <div class="brand"><i data-lucide="shield"></i> STARCITY</div>
+                <nav>
+                    <a href="#dashboard" class="nav-item"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                    <a href="#staff" class="nav-item"><i data-lucide="users"></i> Staff Roster</a>
+                </nav>
+                <button id="logout-btn" style="margin-top:auto; background:none; border:none; color:red; cursor:pointer;">Logout</button>
+            </aside>
+            <main id="main-view" class="main-content"></main>
+        </div>`;
+    
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        window.location.reload();
+    });
     lucide.createIcons();
 }
 
-// --- 5. VIEW: DASHBOARD STATS ---
-function renderDashboardPage(user) {
+// --- DASHBOARD ---
+async function renderDashboardPage() {
     const main = document.getElementById('main-view');
+    // Fetch Stats
+    const { count: staffCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+    const { count: activeCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active');
+    
     main.innerHTML = `
-        <div class="fade-in">
-            <div class="page-header">
-                <h1>Command Center</h1>
-                <button class="btn-primary" style="width: auto; padding: 10px 20px;">+ Quick Action</button>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-label">TOTAL STAFF</div>
-                    <div class="stat-value">--</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">ONLINE NOW</div>
-                    <div class="stat-value" style="color: #4ade80">--</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">PENDING TASKS</div>
-                    <div class="stat-value" style="color: #facc15">--</div>
-                </div>
-            </div>
-
-            <h3 style="margin-bottom: 15px; color: var(--text-muted);">Recent Audit Logs</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Action Type</th>
-                            <th>Details</th>
-                            <th>Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="3" style="padding:20px; text-align:center; color:gray;">System logs coming soon...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="page-header"><h1>Dashboard</h1></div>
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-label">Total Staff</div><div class="stat-value">${staffCount || 0}</div></div>
+            <div class="stat-card"><div class="stat-label">Active Duty</div><div class="stat-value" style="color:#4ade80">${activeCount || 0}</div></div>
         </div>
-    `;
+        <h3>Recent Audit Logs</h3>
+        <div class="table-container">
+            <table><thead><tr><th>Action</th><th>Target</th><th>Date</th></tr></thead><tbody id="audit-list"></tbody></table>
+        </div>`;
+
+    // Fetch Logs
+    const { data: logs } = await supabase.from('audit_logs').select('action, created_at, target:profiles!target_id(full_name)').order('created_at', { ascending: false }).limit(5);
+    const tbody = document.getElementById('audit-list');
+    if(logs) {
+        tbody.innerHTML = logs.map(log => `
+            <tr>
+                <td>${log.action}</td>
+                <td>${log.target?.full_name || 'Unknown'}</td>
+                <td>${new Date(log.created_at).toLocaleDateString()}</td>
+            </tr>`).join('');
+    }
 }
 
-// --- 6. VIEW: STAFF ROSTER ---
+// --- STAFF ROSTER (FUNCTIONAL) ---
 async function renderStaffPage() {
     const main = document.getElementById('main-view');
     main.innerHTML = `
-        <div class="fade-in">
-            <div class="page-header">
-                <h1>Staff Roster</h1>
-                <button class="btn-primary" style="width: auto; padding: 10px 20px;">+ Add Member</button>
-            </div>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name / Callsign</th>
-                            <th>Rank</th>
-                            <th>Department</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="staff-list">
-                        <tr><td colspan="4" style="text-align:center; padding:30px;">
-                            <i data-lucide="loader-2" class="animate-spin"></i> Loading Database...
-                        </td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-    lucide.createIcons();
+        <div class="page-header"><h1>Staff Roster</h1></div>
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Name</th><th>Rank</th><th>Dept</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="staff-list"><tr><td colspan="5">Loading...</td></tr></tbody>
+            </table>
+        </div>`;
 
-    // Fetch Data from Supabase
-    const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select(`
-            full_name, 
-            callsign, 
-            status, 
-            ranks (name, weight), 
-            departments (name, color_hex)
-        `)
-        .order('ranks(weight)', { ascending: false }); // Sort by Highest Rank
+    const { data: staff } = await supabase.from('profiles').select('*, ranks(name, weight), departments(name, color_hex)').order('ranks(weight)', { ascending: false });
 
     const tbody = document.getElementById('staff-list');
-
-    if (error) {
-        console.error("Fetch Error:", error);
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#f87171;">Error loading data. Check console.</td></tr>`;
-        return;
-    }
-
-    if (!profiles || profiles.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">No staff found in database.</td></tr>`;
-        return;
-    }
-
-    // Render Rows
-    tbody.innerHTML = profiles.map(staff => {
-        const deptColor = staff.departments?.color_hex || '#71717a';
-        return `
-            <tr>
-                <td>
-                    <div style="font-weight:600; color:white;">${staff.full_name || 'Unknown'}</div>
-                    <div style="font-size:0.8rem; color:gray;">${staff.callsign || 'No Callsign'}</div>
-                </td>
-                <td>
-                    <span style="color:#e4e4e7;">${staff.ranks?.name || 'Unranked'}</span>
-                </td>
-                <td>
-                    <span class="status-badge" style="background: ${deptColor}30; color: ${deptColor}; border:1px solid ${deptColor}50;">
-                        ${staff.departments?.name || 'General'}
-                    </span>
-                </td>
-                <td>
-                    <span class="status-badge status-${staff.status}">${staff.status.toUpperCase()}</span>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-
-// --- 7. VIEW: TASKS (Placeholder) ---
-function renderTasksPage() {
-    const main = document.getElementById('main-view');
-    main.innerHTML = `
-        <div class="fade-in">
-            <div class="page-header"><h1>Assignments</h1></div>
-            <div class="table-container" style="padding:40px; text-align:center; color:gray;">
-                <i data-lucide="wrench" style="width:48px; height:48px; margin-bottom:10px;"></i>
-                <p>Task Management Module is under construction.</p>
-            </div>
-        </div>
-    `;
+    tbody.innerHTML = staff.map(u => `
+        <tr>
+            <td>${u.full_name}<br><small>${u.callsign || ''}</small></td>
+            <td>${u.ranks?.name || '-'}</td>
+            <td><span style="color:${u.departments?.color_hex || 'white'}">${u.departments?.name || '-'}</span></td>
+            <td><span class="status-badge status-${u.status}">${u.status}</span></td>
+            <td><button class="btn-primary" style="padding:5px 10px; font-size:0.8rem;" onclick="window.openEditModal('${u.id}')">Manage</button></td>
+        </tr>`).join('');
+    
     lucide.createIcons();
 }
 
-// --- START APP ---
+// --- EDIT MODAL LOGIC (THE MAGIC) ---
+window.openEditModal = async (userId) => {
+    const modal = document.getElementById('modal-overlay');
+    const { data: user } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    const { data: depts } = await supabase.from('departments').select('*');
+    const { data: ranks } = await supabase.from('ranks').select('*').order('weight', {ascending: false});
+
+    // Populate Fields
+    document.getElementById('edit-user-id').value = user.id;
+    document.getElementById('edit-name').value = user.full_name;
+    document.getElementById('edit-status').value = user.status;
+
+    // Populate Dropdowns
+    const deptSelect = document.getElementById('edit-dept');
+    deptSelect.innerHTML = depts.map(d => `<option value="${d.id}" ${user.department_id === d.id ? 'selected' : ''}>${d.name}</option>`).join('');
+
+    const rankSelect = document.getElementById('edit-rank');
+    rankSelect.innerHTML = ranks.map(r => `<option value="${r.id}" ${user.rank_id === r.id ? 'selected' : ''}>${r.name}</option>`).join('');
+
+    // Show Modal
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+};
+
+// Close Modal Logic
+document.getElementById('close-modal').onclick = () => {
+    document.getElementById('modal-overlay').style.display = 'none';
+};
+
+// SAVE CHANGES
+document.getElementById('save-user-btn').onclick = async () => {
+    const btn = document.getElementById('save-user-btn');
+    btn.innerText = 'Saving...';
+    
+    const userId = document.getElementById('edit-user-id').value;
+    const name = document.getElementById('edit-name').value;
+    const deptId = document.getElementById('edit-dept').value;
+    const rankId = document.getElementById('edit-rank').value;
+    const status = document.getElementById('edit-status').value;
+
+    // 1. Update Profile
+    const { error } = await supabase.from('profiles').update({
+        full_name: name,
+        department_id: deptId,
+        rank_id: rankId,
+        status: status
+    }).eq('id', userId);
+
+    if (error) {
+        alert('Error updating: ' + error.message);
+    } else {
+        // 2. Create Audit Log
+        await supabase.from('audit_logs').insert({
+            actor_id: currentUser.id,
+            target_id: userId,
+            action: 'UPDATE_PROFILE',
+            details: { new_rank: rankId, new_status: status }
+        });
+        
+        // 3. Refresh
+        document.getElementById('modal-overlay').style.display = 'none';
+        renderStaffPage();
+    }
+    btn.innerText = 'Save Changes';
+};
+
+window.addEventListener('hashchange', handleRouting);
 init();
