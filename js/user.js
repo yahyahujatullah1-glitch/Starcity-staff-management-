@@ -11,23 +11,28 @@ export function initUserView(user) {
 function renderUserLayout() {
     const app = document.getElementById('app');
     
-    // Show mobile button again
-    document.getElementById('mobile-menu-btn').style.display = 'block';
+    // Ensure mobile button is visible
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    if(mobileBtn) mobileBtn.style.display = 'block';
 
     app.innerHTML = `
-        <div class="flex h-full w-full overflow-hidden">
-            <!-- SIDEBAR -->
-            <aside class="sidebar fixed inset-y-0 left-0 w-72 bg-panel border-r border-border transform -translate-x-full md:translate-x-0 z-40 flex flex-col transition-transform duration-300 h-full">
-                <div class="p-6 border-b border-border flex items-center gap-3 shrink-0">
-                    <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center text-primary border border-primary/40 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+        <div class="flex h-full w-full bg-dark relative overflow-hidden">
+            
+            <!-- SIDEBAR (Fixed Z-Index 60 to sit above everything) -->
+            <aside class="sidebar fixed inset-y-0 left-0 w-72 bg-[#121215] border-r border-gray-800 transform -translate-x-full md:translate-x-0 z-[60] flex flex-col transition-transform duration-300">
+                
+                <!-- Sidebar Header -->
+                <div class="p-6 border-b border-gray-800 flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center text-blue-500 border border-blue-500/30">
                         <i data-lucide="shield" class="w-6 h-6"></i>
                     </div>
                     <div>
-                        <h2 class="font-heading font-bold text-xl text-white tracking-widest leading-none">STARCITY</h2>
-                        <span class="text-xs text-primary font-bold tracking-widest">OPERATIVE UPLINK</span>
+                        <h2 class="font-bold text-xl text-white tracking-widest leading-none" style="font-family: 'Rajdhani', sans-serif;">STARCITY</h2>
+                        <span class="text-[10px] text-blue-500 font-bold tracking-[0.2em]">OPERATIVE</span>
                     </div>
                 </div>
 
+                <!-- Nav -->
                 <nav class="nav-container flex-1 p-4 space-y-2 overflow-y-auto">
                     <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors active-nav" onclick="window.switchView('tasks', this)">
                         <i data-lucide="clipboard-list" class="w-5 h-5"></i> MY ASSIGNMENTS
@@ -37,24 +42,27 @@ function renderUserLayout() {
                     </button>
                 </nav>
 
-                <div class="p-4 border-t border-border bg-black/20 shrink-0">
+                <!-- Footer -->
+                <div class="p-4 border-t border-gray-800 bg-black/20">
                     <div class="flex items-center gap-3 mb-4">
-                        <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold">
+                        <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold text-xs">
                             ${currentUser.email[0].toUpperCase()}
                         </div>
                         <div class="overflow-hidden">
                             <p class="text-white text-sm font-bold truncate">${currentUser.email.split('@')[0]}</p>
-                            <p class="text-gray-500 text-xs truncate">Operative</p>
                         </div>
                     </div>
                     <button id="logout-btn" class="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded hover:bg-red-500 hover:text-white transition-all">
-                        <i data-lucide="log-out" class="w-4 h-4"></i> DISCONNECT
+                        LOGOUT
                     </button>
                 </div>
             </aside>
 
-            <!-- MAIN CONTENT (Flex Column to ensure height fits) -->
-            <main id="user-content" class="flex-1 md:ml-72 bg-dark h-full max-h-full flex flex-col overflow-hidden relative w-full"></main>
+            <!-- MAIN CONTENT (Overlay for sidebar on mobile) -->
+            <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-50 hidden md:hidden glass-blur" onclick="document.querySelector('.sidebar').classList.remove('open'); this.classList.add('hidden');"></div>
+
+            <!-- VIEW AREA -->
+            <main id="user-content" class="flex-1 md:ml-72 bg-dark h-full w-full flex flex-col relative z-10"></main>
         </div>
     `;
     lucide.createIcons();
@@ -65,16 +73,21 @@ function renderUserLayout() {
     loadUserTasks();
 
     window.switchView = (view, btn) => {
+        // Update Buttons
         document.querySelectorAll('.nav-btn').forEach(b => {
-            b.classList.remove('bg-primary/10', 'text-white', 'border-l-2', 'border-primary');
+            b.classList.remove('bg-blue-600/10', 'text-white', 'border-l-2', 'border-blue-500');
             b.classList.add('text-gray-400');
         });
         if(btn) {
-            btn.classList.add('bg-primary/10', 'text-white', 'border-l-2', 'border-primary');
+            btn.classList.add('bg-blue-600/10', 'text-white', 'border-l-2', 'border-blue-500');
             btn.classList.remove('text-gray-400');
         }
         
-        document.querySelector('.sidebar').classList.remove('open'); // Close mobile menu
+        // Close Mobile Menu Logic
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        sidebar.classList.remove('open');
+        overlay.classList.add('hidden');
 
         if(view === 'tasks') loadUserTasks();
         if(view === 'chat') loadChat();
@@ -84,33 +97,32 @@ function renderUserLayout() {
     document.querySelector('.nav-btn').click();
 }
 
-// --- CHAT SYSTEM (FIXED FOR MOBILE) ---
+// --- CHAT SYSTEM (FIXED) ---
 async function loadChat() {
     const container = document.getElementById('user-content');
     container.innerHTML = `
-        <div class="flex flex-col h-full w-full bg-dark overflow-hidden relative">
-            
-            <!-- 1. HEADER (Fixed Height) -->
-            <div class="h-14 border-b border-border bg-panel flex items-center px-4 md:px-6 shadow-sm z-10 flex-shrink-0 justify-between md:justify-start">
-                <div class="w-8 md:hidden"></div> <!-- Spacer for mobile menu button -->
-                <h3 class="font-heading font-bold text-white text-lg tracking-wide flex items-center gap-2">
+        <div class="flex flex-col h-full w-full bg-dark">
+            <!-- 1. HEADER (Fixed Height 60px) -->
+            <div class="h-[60px] border-b border-gray-800 bg-[#121215] flex items-center px-4 md:px-6 shadow-sm flex-shrink-0 justify-between md:justify-start">
+                <div class="w-8 md:hidden"></div> <!-- Spacer for menu btn -->
+                <h3 class="font-bold text-white text-lg tracking-wide flex items-center gap-2" style="font-family: 'Rajdhani', sans-serif;">
                     <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                     ENCRYPTED CHANNEL
                 </h3>
             </div>
             
-            <!-- 2. MESSAGES (Takes remaining space, scrolls internally) -->
-            <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth min-h-0 w-full">
-                <div class="flex justify-center mt-10"><div class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full"></div></div>
+            <!-- 2. MESSAGES (Fills remaining height) -->
+            <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 w-full scroll-smooth">
+                <div class="flex justify-center mt-10"><div class="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"></div></div>
             </div>
             
-            <!-- 3. INPUT AREA (Pinned to bottom, never shrinks) -->
-            <div class="p-3 md:p-4 bg-panel border-t border-border flex-shrink-0 w-full z-20 pb-safe">
-                <div class="relative flex items-center gap-2 w-full">
-                    <input id="msg-input" type="text" placeholder="Transmit secure message..." autocomplete="off"
-                        class="flex-1 bg-black/30 border border-border text-white px-4 py-3 rounded-full focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder-gray-600 text-sm">
+            <!-- 3. INPUT (Fixed Bottom, Solid Color) -->
+            <div class="p-3 md:p-4 bg-[#18181b] border-t border-gray-700 flex-shrink-0 chat-input-wrapper z-20">
+                <div class="flex items-center gap-2 w-full max-w-4xl mx-auto">
+                    <input id="msg-input" type="text" placeholder="Type a message..." autocomplete="off"
+                        class="flex-1 bg-gray-900 border border-gray-600 text-white px-4 py-3 rounded-full focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-500">
                     
-                    <button class="w-11 h-11 bg-primary hover:bg-primary-hover text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/20 transition-transform active:scale-95 flex-shrink-0" onclick="window.sendMessage()">
+                    <button class="w-11 h-11 bg-blue-600 active:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 flex-shrink-0" onclick="window.sendMessage()">
                         <i data-lucide="send" class="w-5 h-5 ml-0.5"></i>
                     </button>
                 </div>
@@ -123,11 +135,9 @@ async function loadChat() {
     renderMessages(msgs || []);
     scrollToBottom();
 
+    // Input Listeners
     const input = document.getElementById('msg-input');
     input.addEventListener('keypress', (e) => { if(e.key === 'Enter') window.sendMessage(); });
-
-    // Focus input on load (optional, might pop keyboard on mobile)
-    // input.focus();
 
     supabase.channel('chat_room').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
         const { data: user } = await supabase.from('profiles').select('full_name').eq('id', payload.new.user_id).single();
@@ -144,7 +154,7 @@ function renderMessages(msgs, append = false) {
     const html = msgs.map(m => `
         <div class="flex flex-col ${m.user_id === currentUser.id ? 'items-end' : 'items-start'} animate-fade-in w-full">
             <div class="text-[10px] uppercase font-bold text-gray-500 mb-1 px-1 tracking-wider">${m.profiles?.full_name || 'Unknown'}</div>
-            <div class="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${m.user_id === currentUser.id ? 'bg-primary text-white rounded-br-none' : 'bg-card border border-border text-gray-200 rounded-bl-none'}">
+            <div class="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${m.user_id === currentUser.id ? 'bg-blue-600 text-white rounded-br-none' : 'bg-[#1f1f23] border border-gray-700 text-gray-200 rounded-bl-none'}">
                 ${escapeHtml(m.content)}
             </div>
         </div>
@@ -157,13 +167,8 @@ window.sendMessage = async () => {
     const input = document.getElementById('msg-input');
     const text = input.value.trim();
     if(!text) return;
-    
-    // Clear input immediately for better UX
-    input.value = ''; 
-    
+    input.value = '';
     await supabase.from('messages').insert({ content: text, user_id: currentUser.id });
-    
-    // Keep focus on desktop, but maybe not on mobile to prevent keyboard flickering
     if(window.innerWidth > 768) input.focus();
 };
 
@@ -172,7 +177,7 @@ async function loadUserTasks() {
     const container = document.getElementById('user-content');
     container.innerHTML = `
         <div class="p-4 md:p-8 overflow-y-auto h-full w-full">
-            <h2 class="font-heading font-bold text-2xl md:text-3xl text-white mb-6 tracking-wide mt-12 md:mt-0">MY OBJECTIVES</h2>
+            <h2 class="font-bold text-2xl md:text-3xl text-white mb-6 tracking-wide mt-12 md:mt-0" style="font-family:'Rajdhani',sans-serif">MY OBJECTIVES</h2>
             <div id="task-list" class="grid grid-cols-1 gap-4 max-w-4xl pb-20">
                 <div class="text-center py-12 text-gray-500 animate-pulse">Scanning database...</div>
             </div>
@@ -183,22 +188,22 @@ async function loadUserTasks() {
     
     const list = document.getElementById('task-list');
     if(!tasks || tasks.length===0) return list.innerHTML = `
-        <div class="bg-card border border-border border-dashed rounded-xl p-10 text-center flex flex-col items-center">
-            <div class="w-16 h-16 bg-card rounded-full flex items-center justify-center mb-4 text-gray-500"><i data-lucide="check" class="w-8 h-8"></i></div>
-            <p class="text-gray-400 font-heading text-lg">ALL OBJECTIVES CLEARED</p>
+        <div class="bg-[#18181b] border border-dashed border-gray-700 rounded-xl p-10 text-center flex flex-col items-center">
+            <div class="w-16 h-16 bg-[#27272a] rounded-full flex items-center justify-center mb-4 text-gray-500"><i data-lucide="check" class="w-8 h-8"></i></div>
+            <p class="text-gray-400 font-bold text-lg">ALL OBJECTIVES CLEARED</p>
         </div>`;
 
     list.innerHTML = tasks.map(t => {
         const colors = {
             pending: 'border-gray-500 text-gray-400',
-            submitted: 'border-warning text-warning',
-            approved: 'border-success text-success',
-            rejected: 'border-danger text-danger'
+            submitted: 'border-yellow-500 text-yellow-500',
+            approved: 'border-green-500 text-green-500',
+            rejected: 'border-red-500 text-red-500'
         };
         const statusColor = colors[t.status] || colors.pending;
 
         return `
-        <div class="bg-card border border-border rounded-xl p-5 relative overflow-hidden group hover:border-gray-600 transition-colors shadow-lg">
+        <div class="bg-[#18181b] border border-gray-800 rounded-xl p-5 relative overflow-hidden shadow-lg">
             <div class="absolute left-0 top-0 bottom-0 w-1 ${statusColor.split(' ')[0].replace('text', 'bg')}"></div>
             <div class="flex justify-between items-start mb-3">
                 <h3 class="font-bold text-white text-lg mr-2">${t.title}</h3>
@@ -210,7 +215,7 @@ async function loadUserTasks() {
             <div class="flex justify-between items-center mt-4">
                 <span class="text-xs text-gray-600 font-mono">${new Date(t.created_at).toLocaleDateString()}</span>
                 ${(t.status === 'pending' || t.status === 'rejected') ? 
-                `<button onclick="window.submitProof(${t.id})" class="bg-primary hover:bg-primary-hover text-white text-xs font-bold px-4 py-2 rounded shadow-lg shadow-primary/20 transition-all">SUBMIT PROOF</button>` : ''}
+                `<button onclick="window.submitProof(${t.id})" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded shadow-lg shadow-blue-600/20 transition-all">SUBMIT PROOF</button>` : ''}
             </div>
         </div>
     `;
@@ -221,8 +226,8 @@ async function loadUserTasks() {
 window.submitProof = (id) => {
     showModal('SUBMIT EVIDENCE', `
         <label class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">Proof Link / Details</label>
-        <textarea id="proof-val" rows="3" class="w-full bg-dark border border-border text-white p-3 rounded-lg focus:outline-none focus:border-primary" placeholder="Paste Imgur link or Google Drive URL..."></textarea>
-        <button class="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 mt-4 rounded-lg transition-all" onclick="window.doSubmit(${id})">TRANSMIT DATA</button>
+        <textarea id="proof-val" rows="3" class="w-full bg-[#050505] border border-gray-700 text-white p-3 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Paste Imgur link or Google Drive URL..."></textarea>
+        <button class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 mt-4 rounded-lg transition-all" onclick="window.doSubmit(${id})">TRANSMIT DATA</button>
     `);
 };
 window.doSubmit = async (id) => {
