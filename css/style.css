@@ -1,12 +1,35 @@
 /* Custom Scrollbar for Chrome/Edge/Safari */
-::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: #050505; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
 
-/* Force Mobile Sidebar Transition */
+/* --- MOBILE HEIGHT FIX (Critical) --- */
+/* Use dvh (Dynamic Viewport Height) to account for mobile address bars */
+body, html { 
+    height: 100dvh; 
+    width: 100vw; 
+    overflow: hidden; 
+    overscroll-behavior: none; /* Prevents "pull to refresh" effect */
+}
+
+/* Force layout to never exceed screen size */
+#app {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Sidebar Animations */
 .sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .sidebar.open { transform: translateX(0) !important; }
+
+/* Input Auto-Zoom Fix for iPhones */
+@media screen and (max-width: 768px) {
+    input, select, textarea {
+        font-size: 16px !important; /* Prevents zooming when typing */
+    }
+}
 
 /* Animations */
 @keyframes glow {
